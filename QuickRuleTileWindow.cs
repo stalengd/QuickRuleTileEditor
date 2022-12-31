@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor;
@@ -13,13 +14,17 @@ namespace QuickRuleTileEditor
         [SerializeField] private int selectedTile = 0;
         [SerializeField] private Sprite[] tileSprites;
         [SerializeField] private RuleTile pattern;
+        [SerializeField] private RuleTile tileToEdit;
         [SerializeField] private TilesDisplayMode displayMode = TilesDisplayMode.Mixed;
 
         private VisualElement root;
         private VisualElement spritesContainer;
         private VisualElement tilesContainer;
+        private VisualElement creationModeContainer;
+        private VisualElement editModeContainer;
         private StyleSheet styleSheet;
         private int tilesCount = 16;
+        private System.Action<Object> objectPickerCallback;
 
 
         private enum TilesDisplayMode
@@ -33,7 +38,7 @@ namespace QuickRuleTileEditor
         [MenuItem("Window/Quick Rule Tile")]
         public static void Open()
         {
-            var window = GetWindow<QuickRuleTileWindow>("Quick Rule Tile");
+            GetWindow<QuickRuleTileWindow>("Quick Rule Tile");
         }
 
 
@@ -48,36 +53,146 @@ namespace QuickRuleTileEditor
 
             root = new VisualElement()
             {
-                name = "Root",
+                name = "root",
             };
             root.styleSheets.Add(styleSheet);
             root.AddToClassList("root");
             rootVisualElement.Add(root);
 
+            root.Add(CreateMenu());
 
-            root.Add(CreateHeader());
-            root.Add(CreateSpritesContainer());
-            root.Add(CreateTilesContainer());
-
-            var generateButton = new Button(GenerateRuleTileAsset)
+            var mainContainer = new VisualElement()
             {
-                text = "Generate"
+                name = "main"
             };
-            root.Add(generateButton);
+            mainContainer.AddToClassList("main");
+            root.Add(mainContainer);
+
+            mainContainer.Add(CreateHeader());
+            mainContainer.Add(CreateSpritesContainer());
+            mainContainer.Add(CreateTilesContainer());
+            mainContainer.Add(CreateCreationModeContainer());
+            mainContainer.Add(CreateEditModeContainer());
 
             RefreshSelectedTile();
             SetDisplayMode(displayMode);
+            RefreshEditorMode();
+        }
+
+        private void OnGUI()
+        {
+            if (Event.current.commandName == "ObjectSelectorClosed")
+            {
+                objectPickerCallback(EditorGUIUtility.GetObjectPickerObject());
+            }
         }
 
         private void SelectPattern(RuleTile pattern)
         {
             this.pattern = pattern;
+            selectedTile = 0;
             tileSprites = new Sprite[tilesCount];
+            if (tilesContainer != null)
+            {
+                tilesContainer.Clear();
+                for (int i = 0; i < tilesCount; i++)
+                {
+                    AddTileToContainer(i);
+                }
+                RefreshSelectedTile();
+            }
         }
 
         private Sprite GetPatternSprite(int index)
         {
             return pattern.m_TilingRules[index].m_Sprites[0];
+        }
+
+        private void Clear()
+        {
+            tileToEdit = null;
+            ClearSprites();
+            SelectPattern(pattern);
+            RefreshEditorMode();
+        }
+
+        private void OpenRuleTile()
+        {
+            ShowObjectPicker<RuleTile>(null, false, null, obj =>
+            {
+                if (obj == null)
+                {
+                    return;
+                }
+
+                var tile = (RuleTile)obj;
+                tileToEdit = tile;
+
+                var textures = new HashSet<Texture>();
+
+                for (int i = 0; i < tile.m_TilingRules.Count; i++)
+                {
+                    var sprite = tile.m_TilingRules[i].m_Sprites[0];
+                    SetSpriteForTile(i, sprite);
+                    if (sprite != null)
+                    {
+                        textures.Add(sprite.texture);
+                    }
+                }
+
+                ClearSprites();
+                foreach (var texture in textures)
+                {
+                    foreach (var sprite in GetSpritesFromTexture(texture))
+                    {
+                        AddSprite(sprite);
+                    }
+                }
+                RefreshEditorMode();
+            });
+        }
+        
+        private void RefreshEditorMode()
+        {
+            SetHidden(creationModeContainer, tileToEdit != null);
+            SetHidden(editModeContainer, tileToEdit == null);
+
+            if (tileToEdit != null) 
+            {
+                var infoLabel = editModeContainer.Query<Label>(className: "edit-info-label").First();
+                infoLabel.text = $"Editing \"{tileToEdit.name}\"";
+            }
+        }
+
+        private void ShowObjectPicker<T>
+            (Object obj, bool allowSceneObjects, string searchFilter, System.Action<Object> callback) where T : Object
+        {
+            objectPickerCallback = callback;
+            var controlID = GUIUtility.GetControlID(FocusType.Passive);
+            EditorGUIUtility.ShowObjectPicker<T>(obj, allowSceneObjects, searchFilter, controlID);
+        }
+
+
+        private VisualElement CreateMenu()
+        {
+            var menu = new Toolbar();
+            menu.AddToClassList("menu");
+
+            var newButton = new ToolbarButton(Clear)
+            {
+                text = "New"
+            };
+            newButton.AddToClassList("menu-button-new");
+            menu.Add(newButton);
+
+            var openButton = new ToolbarButton(OpenRuleTile)
+            {
+                text = "Open"
+            };
+            openButton.AddToClassList("menu-button-open");
+            menu.Add(openButton);
+
+            return menu;
         }
 
         private VisualElement CreateHeader()
@@ -121,7 +236,7 @@ namespace QuickRuleTileEditor
 
         private VisualElement CreateSpritesContainer()
         {
-            spritesContainer = new VisualElement();
+            spritesContainer = new ScrollView();
             spritesContainer.AddToClassList("sprites-container");
 
             foreach (var sprite in sprites)
@@ -168,7 +283,7 @@ namespace QuickRuleTileEditor
 
         private VisualElement CreateTilesContainer()
         {
-            tilesContainer = new VisualElement();
+            tilesContainer = new ScrollView();
             tilesContainer.AddToClassList("tiles-container");
 
             for (int i = 0; i < tilesCount; i++)
@@ -177,6 +292,50 @@ namespace QuickRuleTileEditor
             }
 
             return tilesContainer;
+        }
+
+        private VisualElement CreateCreationModeContainer()
+        {
+            creationModeContainer = new VisualElement();
+            creationModeContainer.AddToClassList("creation-mode-container");
+            var generateButton = new Button(GenerateRuleTileAsset)
+            {
+                text = "Save as..."
+            };
+            creationModeContainer.Add(generateButton);
+
+            SetHidden(creationModeContainer, true);
+            return creationModeContainer;
+        }
+
+        private VisualElement CreateEditModeContainer()
+        {
+            editModeContainer = new VisualElement();
+            editModeContainer.AddToClassList("edit-mode-container");
+
+            var infoLabel = new Label();
+            infoLabel.AddToClassList("edit-info-label");
+            editModeContainer.Add(infoLabel);
+
+            var saveButton = new Button(SaveRuleTileAsset)
+            {
+                text = "Save"
+            };
+            editModeContainer.Add(saveButton);
+            
+            var saveAsButton = new Button(GenerateRuleTileAsset)
+            {
+                text = "Save as..."
+            };
+            editModeContainer.Add(saveAsButton);
+
+            SetHidden(editModeContainer, true);
+            return editModeContainer;
+        }
+
+        private void SetHidden(VisualElement element, bool isHidden)
+        {
+            element.EnableInClassList("hidden", isHidden);
         }
 
 
@@ -215,15 +374,20 @@ namespace QuickRuleTileEditor
 
         private void SpriteClicked(Sprite sprite)
         {
-            var tileImage = tilesContainer
-                .ElementAt(selectedTile)
-                .ElementAt(0) as Image;
-            tileImage.sprite = sprite;
-            tileSprites[selectedTile] = sprite;
-
+            SetSpriteForTile(selectedTile, sprite);
             selectedTile = (selectedTile + 1) % tilesCount;
             RefreshSelectedTile();
         }
+
+        private void SetSpriteForTile(int tileIndex, Sprite sprite)
+        {
+            var tileImage = tilesContainer
+                .ElementAt(tileIndex)
+                .ElementAt(0) as Image;
+            tileImage.sprite = sprite;
+            tileSprites[tileIndex] = sprite;
+        }
+
         private void SpriteMouseUp(MouseUpEvent e)
         {
             if (e.button == 1)
@@ -268,21 +432,22 @@ namespace QuickRuleTileEditor
             }
             else if (asset is Texture)
             {
-                var path = AssetDatabase.GetAssetPath(asset);
-                var subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
-
-                foreach (var subAsset in subAssets)
+                foreach (var sprite in GetSpritesFromTexture(asset))
                 {
-                    if (subAsset is Sprite)
-                    {
-                        AddSprite((Sprite)subAsset);
-                    }
+                    AddSprite(sprite);
                 }
             }
             else
             {
                 Debug.LogError($"Assets of type {asset.GetType()} are not supported; try to drop sprites.");
             }
+        }
+
+        private IEnumerable<Sprite> GetSpritesFromTexture(Object texture)
+        {
+            var path = AssetDatabase.GetAssetPath(texture);
+            var subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+            return subAssets.OfType<Sprite>();
         }
 
         private void AddSprite(Sprite sprite)
@@ -299,8 +464,8 @@ namespace QuickRuleTileEditor
 
         private void GenerateRuleTileAsset()
         {
-            var path = 
-                EditorUtility.SaveFilePanelInProject("Save Rule Tile", "Rule Tile", "asset", "Message");
+            var path =  EditorUtility.SaveFilePanelInProject("Save Rule Tile", "Rule Tile", "asset", "Message");
+            if (string.IsNullOrEmpty(path)) return;
 
             var tile = CreateInstance<RuleTile>();
 
@@ -315,6 +480,30 @@ namespace QuickRuleTileEditor
             }
 
             AssetDatabase.CreateAsset(tile, path);
+
+            tileToEdit = tile;
+            RefreshEditorMode();
+        }
+
+        private void SaveRuleTileAsset()
+        {
+            var targetRulesList = tileToEdit.m_TilingRules;
+            for (int i = 0; i < tilesCount; i++)
+            {
+                var sprite = tileSprites[i];
+                RuleTile.TilingRule rule;
+
+                if (targetRulesList.Count > i) 
+                {
+                    rule = targetRulesList[i];
+                }
+                else
+                {
+                    rule = pattern.m_TilingRules[i].Clone();
+                    targetRulesList.Add(rule);
+                }
+                rule.m_Sprites[0] = sprite;
+            }
         }
     }
 }
