@@ -12,19 +12,30 @@ namespace QuickRuleTileEditor
     {
         [SerializeField] private List<Sprite> sprites = new();
         [SerializeField] private int selectedTile = 0;
-        [SerializeField] private Sprite[] tileSprites;
+        [SerializeField] private List<Sprite> tileSprites = new();
         [SerializeField] private RuleTile pattern;
+        [SerializeField] private string patternId;
         [SerializeField] private RuleTile tileToEdit;
         [SerializeField] private TilesDisplayMode displayMode = TilesDisplayMode.Mixed;
+
+        private int TilesCount => tileSprites.Count;
+        private int PatternSize => pattern.m_TilingRules.Count;
 
         private VisualElement root;
         private VisualElement spritesContainer;
         private VisualElement tilesContainer;
         private VisualElement creationModeContainer;
         private VisualElement editModeContainer;
+        private DropdownField patternDropdown;
         private StyleSheet styleSheet;
-        private int tilesCount = 16;
         private System.Action<Object> objectPickerCallback;
+
+        private static Dictionary<string, string> DefaultPatterns { get; } = new()
+        {
+            { "Pattern-16", "16" },
+            { "Pattern-15", "15" }
+        };
+        private static string CustomPatternId { get; } = "Custom";
 
 
         private enum TilesDisplayMode
@@ -44,7 +55,7 @@ namespace QuickRuleTileEditor
 
         private void Awake()
         {
-            SelectPattern(Resources.Load<RuleTile>("Pattern-16"));
+            SelectPattern(DefaultPatterns.First().Key);
         }
 
         private void OnEnable()
@@ -87,11 +98,51 @@ namespace QuickRuleTileEditor
             }
         }
 
-        private void SelectPattern(RuleTile pattern)
+        private void SelectPattern(string id)
+        {
+            if (DefaultPatterns.ContainsKey(id))
+            {
+                SetPattern(Resources.Load<RuleTile>(id));
+                patternId = id;
+            }
+            else if (id == CustomPatternId)
+            {
+                ShowObjectPicker<RuleTile>(null, false, null, customPattern =>
+                {
+                    if (customPattern == null) 
+                    {
+                        patternDropdown.value = patternId;
+                        return;
+                    }
+
+                    SetPattern((RuleTile)customPattern);
+                    patternId = id;
+                });
+            }
+        }
+
+        private void SetPattern(RuleTile pattern)
         {
             this.pattern = pattern;
             selectedTile = 0;
-            tileSprites = new Sprite[tilesCount];
+            var oldTilesCount = TilesCount;
+
+            var existingTileSpritesCount = 0;
+            for (int i = tileSprites.Count - 1; i >= 0; i--)
+            {
+                if (tileSprites[i] != null)
+                {
+                    existingTileSpritesCount = i + 1;
+                    break;
+                }
+            }
+
+            var tilesCount = Mathf.Max(pattern.m_TilingRules.Count, existingTileSpritesCount);
+
+            for (int i = 0; i < tilesCount - oldTilesCount; i++)
+            {
+                tileSprites.Add(null);
+            }
             if (tilesContainer != null)
             {
                 tilesContainer.Clear();
@@ -105,14 +156,26 @@ namespace QuickRuleTileEditor
 
         private Sprite GetPatternSprite(int index)
         {
+            if (index < 0 || index >= PatternSize) return null;
             return pattern.m_TilingRules[index].m_Sprites[0];
+        }
+
+        private string GetPatternName(string id)
+        {
+            if (DefaultPatterns.TryGetValue(id, out var name))
+            {
+                return name;
+            }
+
+            return id;
         }
 
         private void Clear()
         {
             tileToEdit = null;
+            tileSprites.Clear();
             ClearSprites();
-            SelectPattern(pattern);
+            SetPattern(pattern);
             RefreshEditorMode();
         }
 
@@ -130,6 +193,9 @@ namespace QuickRuleTileEditor
 
                 var textures = new HashSet<Texture>();
 
+                tileSprites.Clear();
+                tileSprites.AddRange(tile.m_TilingRules.Select(r => r.m_Sprites[0]));
+                SetPattern(pattern);
                 for (int i = 0; i < tile.m_TilingRules.Count; i++)
                 {
                     var sprite = tile.m_TilingRules[i].m_Sprites[0];
@@ -200,9 +266,13 @@ namespace QuickRuleTileEditor
             var header = new VisualElement();
             header.AddToClassList("header");
 
-            var clearSpritesButton = new Button(ClearSprites) { text = "Clear Sprites" };
-            clearSpritesButton.AddToClassList("clear-sprites-button");
-            header.Add(clearSpritesButton);
+            var patternsList = new List<string>();
+            patternsList.AddRange(DefaultPatterns.Keys);
+            patternsList.Add(CustomPatternId);
+            patternDropdown = new DropdownField(patternsList, patternId, GetPatternName, GetPatternName);
+            patternDropdown.RegisterValueChangedCallback(e => SelectPattern(e.newValue));
+            patternDropdown.AddToClassList("pattern-dropdown");
+            header.Add(patternDropdown);
 
             var displayPattern = new Button(() => SetDisplayMode(TilesDisplayMode.Pattern)) 
             { 
@@ -230,6 +300,10 @@ namespace QuickRuleTileEditor
             displaySprite.AddToClassList("display-sprite-button");
             displaySprite.AddToClassList("btn-merged-right");
             header.Add(displaySprite);
+
+            var clearSpritesButton = new Button(ClearSprites) { text = "Clear Sprites" };
+            clearSpritesButton.AddToClassList("clear-sprites-button");
+            header.Add(clearSpritesButton);
 
             return header;
         }
@@ -286,7 +360,7 @@ namespace QuickRuleTileEditor
             tilesContainer = new ScrollView();
             tilesContainer.AddToClassList("tiles-container");
 
-            for (int i = 0; i < tilesCount; i++)
+            for (int i = 0; i < TilesCount; i++)
             {
                 AddTileToContainer(i);
             }
@@ -354,12 +428,21 @@ namespace QuickRuleTileEditor
 
         private void AddTileToContainer(int tileIndex)
         {
+            var isExcess = tileIndex >= PatternSize;
+
             var image = new Image
             {
                 sprite = GetPatternSprite(tileIndex)
             };
             image.AddToClassList("tile");
+            image.EnableInClassList("tile-excess", isExcess);
             image.RegisterCallback<ClickEvent>(e => TileClicked(tileIndex));
+
+            if (isExcess)
+            {
+                image.tooltip =
+                    "This tile index is over size of the selected pattern and will not be included in the saved asset.";
+            }
 
             var selectedSpriteImage = new Image
             {
@@ -375,7 +458,7 @@ namespace QuickRuleTileEditor
         private void SpriteClicked(Sprite sprite)
         {
             SetSpriteForTile(selectedTile, sprite);
-            selectedTile = (selectedTile + 1) % tilesCount;
+            selectedTile = (selectedTile + 1) % PatternSize;
             RefreshSelectedTile();
         }
 
@@ -469,7 +552,7 @@ namespace QuickRuleTileEditor
 
             var tile = CreateInstance<RuleTile>();
 
-            for (int i = 0; i < tilesCount; i++)
+            for (int i = 0; i < PatternSize; i++)
             {
                 var sprite = tileSprites[i];
 
@@ -488,7 +571,7 @@ namespace QuickRuleTileEditor
         private void SaveRuleTileAsset()
         {
             var targetRulesList = tileToEdit.m_TilingRules;
-            for (int i = 0; i < tilesCount; i++)
+            for (int i = 0; i < PatternSize; i++)
             {
                 var sprite = tileSprites[i];
                 RuleTile.TilingRule rule;

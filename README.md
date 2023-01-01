@@ -4,12 +4,12 @@ An Unity editor window for creating and then editing rule tiles (aka auto tiles)
 
 **!!! Package in development !!!** 
 
-At the moment, the minimum number of features has been implemented, you can only use pattern of 16 tiles to create and edit simple rule tiles.
+At the moment, the minimum number of features has been implemented, you can use several patterns (16, 15 tiles) to create and edit simple rule tiles.
 
 Some planned features:
 - Editing existing rule tiles support (partially implemented)
 - Animations/sprite variants support
-- Different patterns support, including custom ones
+- Different patterns support, including custom ones (partially implemented)
 
 
 ## Requirements
