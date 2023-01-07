@@ -2,8 +2,16 @@
 
 }
 
+.root:last-child {
+    flex-grow: 1;
+}
+
 .hidden {
     display: none;
+}
+
+.menu-button-inspector {
+    margin-left: auto;
 }
 
 .main {
@@ -14,6 +22,7 @@
     align-items: flex-start;
     flex-direction: row;
     flex-shrink: 0;
+    overflow: hidden;
 }
 .pattern-dropdown {
     flex-basis: 120px;
@@ -152,4 +161,28 @@
     align-self: stretch;
     text-align: middle-left;
     -unity-text-align: middle-left;
+}
+
+.inspector .unity-scroll-view__content-container {
+    padding: 4px;
+}
+
+.selected-tile-label {
+    font-size: 22px;
+}
+
+.inspector-images-row {
+    flex-direction: row;
+    height: 64px;
+}
+.inspector-images-row * {
+    width: 64px;
+    flex-grow: 1;
+}
+
+.inspector-field Label {
+    min-width: 80px;
+}
+.inspector-field-button {
+    font-size: 8px;
 }

@@ -10,18 +10,19 @@ namespace QuickRuleTileEditor
     // Class is partial, so this file file contains the main part.
     // Other files:
     //   - QuickRuleTileWindowStructure.cs - UI setup
+    //   - QuickRuleTileWindowInspector.cs - Inspector
     //   - QuickRuleTileWindowMisc.cs - Other
     public partial class QuickRuleTileWindow : EditorWindow, IObjectPickerHost
     {
         [SerializeField] private List<Sprite> sprites = new();
         [SerializeField] private int selectedTile = 0;
-        [SerializeField] private List<Sprite> tileSprites = new();
+        [SerializeField] private List<RuleTile.TilingRuleOutput> tiles = new();
         [SerializeField] private RuleTile pattern;
         [SerializeField] private string patternId;
         [SerializeField] private RuleTile tileToEdit;
         [SerializeField] private TilesDisplayMode displayMode = TilesDisplayMode.Mixed;
 
-        private int TilesCount => tileSprites.Count;
+        private int TilesCount => tiles.Count;
         private int PatternSize => pattern.m_TilingRules.Count;
 
         private StyleSheet styleSheet;
@@ -63,9 +64,10 @@ namespace QuickRuleTileEditor
 
         private void OnGUI()
         {
-            if (Event.current.commandName == "ObjectSelectorClosed")
+            if (Event.current.commandName == "ObjectSelectorClosed" && objectPickerCallback != null)
             {
                 objectPickerCallback(EditorGUIUtility.GetObjectPickerObject());
+                objectPickerCallback = null;
             }
         }
 
@@ -93,9 +95,9 @@ namespace QuickRuleTileEditor
             var oldTilesCount = TilesCount;
 
             var existingTileSpritesCount = 0;
-            for (int i = tileSprites.Count - 1; i >= 0; i--)
+            for (int i = tiles.Count - 1; i >= 0; i--)
             {
-                if (tileSprites[i] != null)
+                if (GetTileSprite(i) != null)
                 {
                     existingTileSpritesCount = i + 1;
                     break;
@@ -106,7 +108,17 @@ namespace QuickRuleTileEditor
 
             for (int i = 0; i < tilesCount - oldTilesCount; i++)
             {
-                tileSprites.Add(null);
+                var index = tiles.Count;
+                RuleTile.TilingRuleOutput ruleOutput;
+                if (pattern.m_TilingRules.Count < index)
+                {
+                    ruleOutput = pattern.m_TilingRules[index].Clone();
+                }
+                else
+                {
+                    ruleOutput = new RuleTile.TilingRuleOutput();
+                }
+                tiles.Add(ruleOutput);
             }
             if (tilesContainer != null)
             {
@@ -128,7 +140,7 @@ namespace QuickRuleTileEditor
         private void Clear()
         {
             tileToEdit = null;
-            tileSprites.Clear();
+            tiles.Clear();
             ClearSprites();
             SetPattern(patternId, pattern);
             RefreshEditorMode();
@@ -148,8 +160,8 @@ namespace QuickRuleTileEditor
 
                 var textures = new HashSet<Texture>();
 
-                tileSprites.Clear();
-                tileSprites.AddRange(tile.m_TilingRules.Select(r => r.m_Sprites[0]));
+                tiles.Clear();
+                tiles.AddRange(tile.m_TilingRules.Select(r => r.Clone()));
                 SetPattern(patternId, pattern);
                 for (int i = 0; i < tile.m_TilingRules.Count; i++)
                 {
@@ -198,7 +210,12 @@ namespace QuickRuleTileEditor
                 .ElementAt(tileIndex)
                 .ElementAt(0) as Image;
             tileImage.sprite = sprite;
-            tileSprites[tileIndex] = sprite;
+            tiles[tileIndex].m_Sprites[0] = sprite;
+        }
+
+        private Sprite GetTileSprite(int tileIndex)
+        {
+            return tiles[tileIndex].m_Sprites[0];
         }
 
         private void SpriteMouseUp(MouseUpEvent e)
@@ -226,6 +243,7 @@ namespace QuickRuleTileEditor
                 tile.EnableInClassList("selected-tile", i == selectedTile);
                 i++;
             }
+            RefreshInspector();
         }
 
         private void SetDisplayMode(TilesDisplayMode mode)
@@ -277,10 +295,12 @@ namespace QuickRuleTileEditor
 
             for (int i = 0; i < PatternSize; i++)
             {
-                var sprite = tileSprites[i];
+                var ruleOutput = tiles[i];
 
                 var rule = pattern.m_TilingRules[i].Clone();
-                rule.m_Sprites[0] = sprite;
+                rule.m_Sprites = (Sprite[])ruleOutput.m_Sprites.Clone();
+                rule.m_GameObject = ruleOutput.m_GameObject;
+                rule.m_ColliderType = ruleOutput.m_ColliderType;
 
                 tile.m_TilingRules.Add(rule);
             }
@@ -296,7 +316,7 @@ namespace QuickRuleTileEditor
             var targetRulesList = tileToEdit.m_TilingRules;
             for (int i = 0; i < PatternSize; i++)
             {
-                var sprite = tileSprites[i];
+                var ruleOutput = tiles[i];
                 RuleTile.TilingRule rule;
 
                 if (targetRulesList.Count > i) 
@@ -308,7 +328,19 @@ namespace QuickRuleTileEditor
                     rule = pattern.m_TilingRules[i].Clone();
                     targetRulesList.Add(rule);
                 }
-                rule.m_Sprites[0] = sprite;
+                rule.m_NeighborPositions.Clear();
+                rule.m_NeighborPositions.AddRange(pattern.m_TilingRules[i].m_NeighborPositions);
+                rule.m_Neighbors.Clear();
+                rule.m_Neighbors.AddRange(pattern.m_TilingRules[i].m_Neighbors);
+                rule.m_Sprites = (Sprite[])ruleOutput.m_Sprites.Clone();
+                rule.m_GameObject = ruleOutput.m_GameObject;
+                rule.m_ColliderType = ruleOutput.m_ColliderType;
+            }
+
+            for (int i = PatternSize; i < targetRulesList.Count; i++)
+            {
+                targetRulesList.RemoveAt(i);
+                i--;
             }
         }
     }

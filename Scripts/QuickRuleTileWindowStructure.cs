@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -17,6 +18,14 @@ namespace QuickRuleTileEditor
         private VisualElement editModeContainer;
         private DropdownField patternDropdown;
 
+        private TwoPaneSplitView inspectorSplitView;
+        private Label selectedTileLabel;
+        private Image selectedTilePatternImage;
+        private Image selectedTileSpriteImage;
+        private ObjectField inspectorGameObjectField;
+        private EnumField inspectorColliderField;
+        private EnumField inspectorOutputField;
+
 
         private VisualElement CreateRoot()
         {
@@ -29,18 +38,24 @@ namespace QuickRuleTileEditor
 
             root.Add(CreateMenu());
 
+            var inspector = CreateInspector();
+
             var mainContainer = new VisualElement()
             {
                 name = "main"
             };
             mainContainer.AddToClassList("main");
-            root.Add(mainContainer);
-
             mainContainer.Add(CreateHeader());
             mainContainer.Add(CreateSpritesContainer());
             mainContainer.Add(CreateTilesContainer());
             mainContainer.Add(CreateCreationModeContainer());
             mainContainer.Add(CreateEditModeContainer());
+
+            inspectorSplitView 
+                = new TwoPaneSplitView(1, QuickRuleTileConfig.initialInspectorSize, TwoPaneSplitViewOrientation.Horizontal);
+            inspectorSplitView.Add(mainContainer);
+            inspectorSplitView.Add(inspector);
+            root.Add(inspectorSplitView);
 
             return root;
         }
@@ -64,7 +79,68 @@ namespace QuickRuleTileEditor
             openButton.AddToClassList("menu-button-open");
             menu.Add(openButton);
 
+            var inspectorButton = new ToolbarButton(ToggleInspectorVisibility)
+            {
+                text = "Inspector"
+            };
+            inspectorButton.AddToClassList("menu-button-inspector");
+            menu.Add(inspectorButton);
+
             return menu;
+        }
+
+        private VisualElement CreateInspector()
+        {
+            var inspector = new ScrollView();
+            inspector.AddToClassList("inspector");
+
+            selectedTileLabel = new Label();
+            selectedTileLabel.AddToClassList("selected-tile-label");
+            inspector.Add(selectedTileLabel);
+
+            var imagesRow = new VisualElement();
+            imagesRow.AddToClassList("inspector-images-row");
+            inspector.Add(imagesRow);
+
+            selectedTilePatternImage = new Image();
+            imagesRow.Add(selectedTilePatternImage);
+            selectedTileSpriteImage = new Image();
+            imagesRow.Add(selectedTileSpriteImage);
+
+
+            static VisualElement inspectorField(VisualElement innerField, System.Action applyForOtherAction)
+            {
+                innerField.AddToClassList("inspector-field");
+
+                var applyForOtherButton = new Button(applyForOtherAction)
+                {
+                    text = "For All",
+                    tooltip = "Apply for all tiles"
+                };
+                applyForOtherButton.AddToClassList("inspector-field-button");
+
+                innerField.Add(applyForOtherButton);
+                return innerField;
+            }
+
+            inspectorGameObjectField = new ObjectField("GameObject")
+            {
+                objectType = typeof(GameObject),
+                allowSceneObjects = false
+            };
+            inspectorGameObjectField.RegisterValueChangedCallback(OnSelectedTileGameObjectChanged);
+            inspector.Add(inspectorField(inspectorGameObjectField, ApplySelectedTileGameObjectForAll));
+
+            inspectorColliderField = new EnumField("Collider", Tile.ColliderType.None);
+            inspectorColliderField.RegisterValueChangedCallback(OnSelectedTileColliderChanged);
+            inspector.Add(inspectorField(inspectorColliderField, ApplySelectedTileColliderForAll));
+
+            inspectorOutputField = new EnumField("Output", RuleTile.TilingRuleOutput.OutputSprite.Single);
+            inspectorOutputField.RegisterValueChangedCallback(OnSelectedTileOutputChanged);
+            inspector.Add(inspectorField(inspectorOutputField, ApplySelectedTileOutputForAll));
+            inspectorOutputField.SetHidden(true); // Complex output is not supported for now
+
+            return inspector;
         }
 
         private VisualElement CreateHeader()
@@ -246,7 +322,7 @@ namespace QuickRuleTileEditor
 
             var selectedSpriteImage = new Image
             {
-                sprite = tileSprites[tileIndex]
+                sprite = GetTileSprite(tileIndex)
             };
             selectedSpriteImage.AddToClassList("tile-sprite");
             image.Add(selectedSpriteImage);
