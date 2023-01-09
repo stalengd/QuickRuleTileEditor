@@ -90,7 +90,7 @@
 }
 
 
-.tiles-container {
+.tiles-view {
     background-color: rgba(0, 0, 0, 0.2);
     border-color: rgb(100, 100, 100);
     border-width: 1px;
@@ -100,7 +100,7 @@
     flex: 1 1 100%;
 }
 
-.tiles-container .unity-scroll-view__content-container{
+.tiles-container {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-start;
@@ -147,6 +147,13 @@
 }
 .tiles-display__sprite .tile>.tile-sprite {
     opacity: 1;
+}
+
+.tile>Label {
+    position: absolute;
+    left: 1px;
+    bottom: 1px;
+    font-size: 10px;
 }
 
 .creation-mode-container,

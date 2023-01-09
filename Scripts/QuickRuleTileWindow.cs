@@ -90,6 +90,9 @@ namespace QuickRuleTileEditor
         {
             if (tilesContainer != null)
             {
+                RefreshPatternSpriteForTile(-1);
+                SetSpriteForTile(-1, model.GetTileSprite(-1));
+
                 tilesContainer.Clear();
                 for (int i = 0; i < model.TilesCount; i++)
                 {
@@ -166,11 +169,37 @@ namespace QuickRuleTileEditor
 
         private void SetSpriteForTile(int tileIndex, Sprite sprite)
         {
-            var tileImage = tilesContainer
-                .ElementAt(tileIndex)
-                .ElementAt(0) as Image;
+            Image tileImage;
+            if (tileIndex == -1)
+            {
+                tileImage = defaultTileElement
+                    .ElementAt(0) as Image;
+            }
+            else
+            {
+                tileImage = tilesContainer
+                    .ElementAt(tileIndex)
+                    .ElementAt(0) as Image;
+            }
+
             tileImage.sprite = sprite;
             model.SetSpriteForTile(tileIndex, sprite);
+        }
+
+        private void RefreshPatternSpriteForTile(int tileIndex)
+        {
+            Image tileImage;
+            if (tileIndex == -1)
+            {
+                tileImage = defaultTileElement;
+            }
+            else
+            {
+                tileImage = tilesContainer
+                    .ElementAt(tileIndex) as Image;
+            }
+
+            tileImage.sprite = model.GetPatternSprite(tileIndex);
         }
 
         private void SpriteMouseUp(MouseUpEvent e)
@@ -199,6 +228,7 @@ namespace QuickRuleTileEditor
                 tile.EnableInClassList("selected-tile", i == selectedTile);
                 i++;
             }
+            defaultTileElement.EnableInClassList("selected-tile", selectedTile == -1);
             RefreshInspector();
         }
 

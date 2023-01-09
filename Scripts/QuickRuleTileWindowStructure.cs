@@ -17,6 +17,7 @@ namespace QuickRuleTileEditor
         private VisualElement creationModeContainer;
         private VisualElement editModeContainer;
         private DropdownField patternDropdown;
+        private Image defaultTileElement;
 
         private TwoPaneSplitView inspectorSplitView;
         private Label selectedTileLabel;
@@ -238,15 +239,24 @@ namespace QuickRuleTileEditor
 
         private VisualElement CreateTilesContainer()
         {
-            tilesContainer = new ScrollView();
+            var tilesScrollView = new ScrollView();
+            tilesScrollView.AddToClassList("tiles-view");
+
+            defaultTileElement = CreateTileElement(-1);
+            defaultTileElement.AddToClassList("tile-default");
+            defaultTileElement.Add(new Label("Default"));
+            tilesScrollView.Add(defaultTileElement);
+
+            tilesContainer = new VisualElement();
             tilesContainer.AddToClassList("tiles-container");
+            tilesScrollView.Add(tilesContainer);
 
             for (int i = 0; i < model.TilesCount; i++)
             {
                 AddTileToContainer(i);
             }
 
-            return tilesContainer;
+            return tilesScrollView;
         }
 
         private VisualElement CreateCreationModeContainer()
@@ -304,6 +314,12 @@ namespace QuickRuleTileEditor
 
         private void AddTileToContainer(int tileIndex)
         {
+            var element = CreateTileElement(tileIndex);
+            tilesContainer.Add(element);
+        }
+
+        private Image CreateTileElement(int tileIndex)
+        {
             var isExcess = tileIndex >= model.PatternSize;
 
             var image = new Image
@@ -326,8 +342,7 @@ namespace QuickRuleTileEditor
             };
             selectedSpriteImage.AddToClassList("tile-sprite");
             image.Add(selectedSpriteImage);
-
-            tilesContainer.Add(image);
+            return image;
         }
     }
 }

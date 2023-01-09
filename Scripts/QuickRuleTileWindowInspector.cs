@@ -13,7 +13,8 @@ namespace QuickRuleTileEditor
     {
         private void RefreshInspector()
         {
-            selectedTileLabel.text = $"#{model.SelectedTile}";
+            var isDefaultSelected = model.SelectedTile == -1;
+            selectedTileLabel.text = isDefaultSelected ? "Default" : $"#{model.SelectedTile}";
             selectedTilePatternImage.sprite = model.GetPatternSprite(model.SelectedTile);
             selectedTileSpriteImage.sprite = model.GetTileSprite(model.SelectedTile);
 

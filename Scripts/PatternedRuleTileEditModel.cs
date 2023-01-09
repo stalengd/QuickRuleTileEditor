@@ -11,6 +11,7 @@ namespace QuickRuleTileEditor
         [SerializeField] private List<Sprite> sprites = new();
         [SerializeField] private int selectedTile = 0;
         [SerializeField] private List<RuleTile.TilingRuleOutput> tiles = new();
+        [SerializeField] private RuleTile.TilingRuleOutput defaultTile = new();
         [SerializeField] private RuleTile pattern;
         [SerializeField] private string patternId;
         [SerializeField] private RuleTile tileToEdit;
@@ -22,7 +23,7 @@ namespace QuickRuleTileEditor
         }
         public RuleTile TileToEdit => tileToEdit;
         public IReadOnlyList<Sprite> Sprites => sprites;
-        public IEnumerable<RuleTile.TilingRuleOutput> AllOutputs => tiles;
+        public IEnumerable<RuleTile.TilingRuleOutput> AllOutputs => tiles.Append(defaultTile);
         public int TilesCount => tiles.Count;
         public int PatternSize => pattern.m_TilingRules.Count;
         public string PatternId => patternId;
@@ -40,6 +41,9 @@ namespace QuickRuleTileEditor
         {
             this.tileToEdit = tileToEdit;
             tiles.AddRange(tileToEdit.m_TilingRules.Select(r => r.Clone()));
+            defaultTile.m_Sprites[0] = tileToEdit.m_DefaultSprite;
+            defaultTile.m_GameObject = tileToEdit.m_DefaultGameObject;
+            defaultTile.m_ColliderType = tileToEdit.m_DefaultColliderType;
 
             SetPattern(pattern);
         }
@@ -82,26 +86,31 @@ namespace QuickRuleTileEditor
                 }
                 tiles.Add(ruleOutput);
             }
+
+            defaultTile.m_GameObject = pattern.RuleTile.m_DefaultGameObject;
+            defaultTile.m_ColliderType = pattern.RuleTile.m_DefaultColliderType;
         }
 
         public Sprite GetPatternSprite(int index)
         {
+            if (index == -1) return pattern.m_DefaultSprite;
             if (index < 0 || index >= PatternSize) return null;
             return pattern.m_TilingRules[index].m_Sprites[0];
         }
 
         public void SetSpriteForTile(int tileIndex, Sprite sprite)
         {
-            tiles[tileIndex].m_Sprites[0] = sprite;
+            GetTileOutput(tileIndex).m_Sprites[0] = sprite;
         }
 
         public Sprite GetTileSprite(int tileIndex)
         {
-            return tiles[tileIndex].m_Sprites[0];
+            return GetTileOutput(tileIndex).m_Sprites[0];
         }
 
         public RuleTile.TilingRuleOutput GetTileOutput(int tileIndex)
         {
+            if (tileIndex == -1) return defaultTile;
             return tiles[tileIndex];
         }
 
@@ -138,6 +147,7 @@ namespace QuickRuleTileEditor
             if (string.IsNullOrEmpty(path)) return;
 
             var tile = ScriptableObject.CreateInstance<RuleTile>();
+            WriteDefaultTileForAsset(tile);
 
             for (int i = 0; i < PatternSize; i++)
             {
@@ -158,6 +168,8 @@ namespace QuickRuleTileEditor
 
         public void SaveRuleTileAsset()
         {
+            WriteDefaultTileForAsset(tileToEdit);
+
             var targetRulesList = tileToEdit.m_TilingRules;
             for (int i = 0; i < PatternSize; i++)
             {
@@ -187,6 +199,14 @@ namespace QuickRuleTileEditor
                 targetRulesList.RemoveAt(i);
                 i--;
             }
+        }
+
+
+        private void WriteDefaultTileForAsset(RuleTile asset)
+        {
+            asset.m_DefaultSprite = defaultTile.m_Sprites[0];
+            asset.m_DefaultGameObject = defaultTile.m_GameObject;
+            asset.m_DefaultColliderType = defaultTile.m_ColliderType;
         }
     }
 }
