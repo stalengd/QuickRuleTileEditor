@@ -150,7 +150,7 @@ namespace QuickRuleTileEditor
 
             System.Func<string, string> nameFormatter = patternsProvider.GetPatternName;
             var patternsList = patternsProvider.GetAllPatternsIds();
-            patternDropdown = new DropdownField(patternsList, patternId, nameFormatter, nameFormatter);
+            patternDropdown = new DropdownField(patternsList, model.PatternId, nameFormatter, nameFormatter);
             patternDropdown.RegisterValueChangedCallback(e => SelectPattern(e.newValue));
             patternDropdown.AddToClassList("pattern-dropdown");
             header.Add(patternDropdown);
@@ -194,7 +194,7 @@ namespace QuickRuleTileEditor
             spritesContainer = new ScrollView();
             spritesContainer.AddToClassList("sprites-container");
 
-            foreach (var sprite in sprites)
+            foreach (var sprite in model.Sprites)
             {
                 AddSpriteImageToContainer(sprite);
             }
@@ -241,7 +241,7 @@ namespace QuickRuleTileEditor
             tilesContainer = new ScrollView();
             tilesContainer.AddToClassList("tiles-container");
 
-            for (int i = 0; i < TilesCount; i++)
+            for (int i = 0; i < model.TilesCount; i++)
             {
                 AddTileToContainer(i);
             }
@@ -304,11 +304,11 @@ namespace QuickRuleTileEditor
 
         private void AddTileToContainer(int tileIndex)
         {
-            var isExcess = tileIndex >= PatternSize;
+            var isExcess = tileIndex >= model.PatternSize;
 
             var image = new Image
             {
-                sprite = GetPatternSprite(tileIndex)
+                sprite = model.GetPatternSprite(tileIndex)
             };
             image.AddToClassList("tile");
             image.EnableInClassList("tile-excess", isExcess);
@@ -322,7 +322,7 @@ namespace QuickRuleTileEditor
 
             var selectedSpriteImage = new Image
             {
-                sprite = GetTileSprite(tileIndex)
+                sprite = model.GetTileSprite(tileIndex)
             };
             selectedSpriteImage.AddToClassList("tile-sprite");
             image.Add(selectedSpriteImage);

@@ -13,11 +13,11 @@ namespace QuickRuleTileEditor
     {
         private void RefreshInspector()
         {
-            selectedTileLabel.text = $"#{selectedTile}";
-            selectedTilePatternImage.sprite = GetPatternSprite(selectedTile);
-            selectedTileSpriteImage.sprite = GetTileSprite(selectedTile);
+            selectedTileLabel.text = $"#{model.SelectedTile}";
+            selectedTilePatternImage.sprite = model.GetPatternSprite(model.SelectedTile);
+            selectedTileSpriteImage.sprite = model.GetTileSprite(model.SelectedTile);
 
-            var ruleOutput = tiles[selectedTile];
+            var ruleOutput = model.GetTileOutput(model.SelectedTile);
             inspectorGameObjectField.value = ruleOutput.m_GameObject;
             inspectorColliderField.value = ruleOutput.m_ColliderType;
         }
@@ -48,14 +48,14 @@ namespace QuickRuleTileEditor
         private void OnSelectedTileGameObjectChanged(ChangeEvent<Object> e)
         {
             var value = (GameObject)e.newValue;
-            var ruleOutput = tiles[selectedTile];
+            var ruleOutput = model.GetTileOutput(model.SelectedTile);
             ruleOutput.m_GameObject = value;
         }
 
         private void OnSelectedTileColliderChanged(ChangeEvent<System.Enum> e)
         {
             var value = (Tile.ColliderType)e.newValue;
-            var ruleOutput = tiles[selectedTile];
+            var ruleOutput = model.GetTileOutput(model.SelectedTile);
             ruleOutput.m_ColliderType = value;
         }
 
@@ -66,19 +66,19 @@ namespace QuickRuleTileEditor
 
         private void ApplySelectedTileGameObjectForAll()
         {
-            var gameObject = tiles[selectedTile].m_GameObject;
-            foreach (var ruleOutput in tiles)
+            var gameObject = model.GetTileOutput(model.SelectedTile).m_GameObject;
+            foreach (var output in model.AllOutputs)
             {
-                ruleOutput.m_GameObject = gameObject;
+                output.m_GameObject = gameObject;
             }
         }
 
         private void ApplySelectedTileColliderForAll()
         {
-            var collider = tiles[selectedTile].m_ColliderType;
-            foreach (var ruleOutput in tiles)
+            var collider = model.GetTileOutput(model.SelectedTile).m_ColliderType;
+            foreach (var output in model.AllOutputs)
             {
-                ruleOutput.m_ColliderType = collider;
+                output.m_ColliderType = collider;
             }
         }
 

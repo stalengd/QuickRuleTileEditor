@@ -14,16 +14,8 @@ namespace QuickRuleTileEditor
     //   - QuickRuleTileWindowMisc.cs - Other
     public partial class QuickRuleTileWindow : EditorWindow, IObjectPickerHost
     {
-        [SerializeField] private List<Sprite> sprites = new();
-        [SerializeField] private int selectedTile = 0;
-        [SerializeField] private List<RuleTile.TilingRuleOutput> tiles = new();
-        [SerializeField] private RuleTile pattern;
-        [SerializeField] private string patternId;
-        [SerializeField] private RuleTile tileToEdit;
+        [SerializeField] private PatternedRuleTileEditModel model;
         [SerializeField] private TilesDisplayMode displayMode = TilesDisplayMode.Mixed;
-
-        private int TilesCount => tiles.Count;
-        private int PatternSize => pattern.m_TilingRules.Count;
 
         private StyleSheet styleSheet;
         private System.Action<Object> objectPickerCallback;
@@ -47,6 +39,7 @@ namespace QuickRuleTileEditor
 
         private void Awake()
         {
+            model = new PatternedRuleTileEditModel();
             SelectPattern(patternsProvider.FirstDefaultPatternId);
         }
 
@@ -78,52 +71,27 @@ namespace QuickRuleTileEditor
             {
                 if (pattern != null)
                 {
-                    SetPattern(id, pattern);
+                    SetPattern(new RuleTilePattern(id, pattern));
                 }
                 else
                 {
-                    patternDropdown.value = patternId;
+                    patternDropdown.value = model.PatternId;
                 }
             });
         }
 
-        private void SetPattern(string id, RuleTile pattern)
+        private void SetPattern(RuleTilePattern pattern)
         {
-            patternId = id;
-            this.pattern = pattern;
-            selectedTile = 0;
-            var oldTilesCount = TilesCount;
+            model.SetPattern(pattern);
+            RefreshTilesContainer();
+        }
 
-            var existingTileSpritesCount = 0;
-            for (int i = tiles.Count - 1; i >= 0; i--)
-            {
-                if (GetTileSprite(i) != null)
-                {
-                    existingTileSpritesCount = i + 1;
-                    break;
-                }
-            }
-
-            var tilesCount = Mathf.Max(pattern.m_TilingRules.Count, existingTileSpritesCount);
-
-            for (int i = 0; i < tilesCount - oldTilesCount; i++)
-            {
-                var index = tiles.Count;
-                RuleTile.TilingRuleOutput ruleOutput;
-                if (pattern.m_TilingRules.Count < index)
-                {
-                    ruleOutput = pattern.m_TilingRules[index].Clone();
-                }
-                else
-                {
-                    ruleOutput = new RuleTile.TilingRuleOutput();
-                }
-                tiles.Add(ruleOutput);
-            }
+        private void RefreshTilesContainer()
+        {
             if (tilesContainer != null)
             {
                 tilesContainer.Clear();
-                for (int i = 0; i < tilesCount; i++)
+                for (int i = 0; i < model.TilesCount; i++)
                 {
                     AddTileToContainer(i);
                 }
@@ -131,19 +99,14 @@ namespace QuickRuleTileEditor
             }
         }
 
-        private Sprite GetPatternSprite(int index)
-        {
-            if (index < 0 || index >= PatternSize) return null;
-            return pattern.m_TilingRules[index].m_Sprites[0];
-        }
-
         private void Clear()
         {
-            tileToEdit = null;
-            tiles.Clear();
+            var pattern = model.Pattern;
+            model = new PatternedRuleTileEditModel(pattern);
+
             ClearSprites();
-            SetPattern(patternId, pattern);
             RefreshEditorMode();
+            RefreshTilesContainer();
         }
 
         private void OpenRuleTile()
@@ -156,16 +119,13 @@ namespace QuickRuleTileEditor
                 }
 
                 var tile = (RuleTile)obj;
-                tileToEdit = tile;
+                model = new PatternedRuleTileEditModel(model.Pattern, tile);
+                RefreshTilesContainer();
 
                 var textures = new HashSet<Texture>();
-
-                tiles.Clear();
-                tiles.AddRange(tile.m_TilingRules.Select(r => r.Clone()));
-                SetPattern(patternId, pattern);
-                for (int i = 0; i < tile.m_TilingRules.Count; i++)
+                for (int i = 0; i < model.TilesCount; i++)
                 {
-                    var sprite = tile.m_TilingRules[i].m_Sprites[0];
+                    var sprite = model.GetTileSprite(i);
                     SetSpriteForTile(i, sprite);
                     if (sprite != null)
                     {
@@ -187,20 +147,20 @@ namespace QuickRuleTileEditor
         
         private void RefreshEditorMode()
         {
-            creationModeContainer.SetHidden(tileToEdit != null);
-            editModeContainer.SetHidden(tileToEdit == null);
+            creationModeContainer.SetHidden(model.TileToEdit != null);
+            editModeContainer.SetHidden(model.TileToEdit == null);
 
-            if (tileToEdit != null) 
+            if (model.TileToEdit != null) 
             {
                 var infoLabel = editModeContainer.Query<Label>(className: "edit-info-label").First();
-                infoLabel.text = $"Editing \"{tileToEdit.name}\"";
+                infoLabel.text = $"Editing \"{model.TileToEdit.name}\"";
             }
         }
 
         private void SpriteClicked(Sprite sprite)
         {
-            SetSpriteForTile(selectedTile, sprite);
-            selectedTile = (selectedTile + 1) % PatternSize;
+            SetSpriteForTile(model.SelectedTile, sprite);
+            model.SelectNextTile();
             RefreshSelectedTile();
         }
 
@@ -210,12 +170,7 @@ namespace QuickRuleTileEditor
                 .ElementAt(tileIndex)
                 .ElementAt(0) as Image;
             tileImage.sprite = sprite;
-            tiles[tileIndex].m_Sprites[0] = sprite;
-        }
-
-        private Sprite GetTileSprite(int tileIndex)
-        {
-            return tiles[tileIndex].m_Sprites[0];
+            model.SetSpriteForTile(tileIndex, sprite);
         }
 
         private void SpriteMouseUp(MouseUpEvent e)
@@ -224,20 +179,21 @@ namespace QuickRuleTileEditor
             {
                 var image = e.target as Image;
                 var index = image.parent.IndexOf(image);
-                sprites.RemoveAt(index);
+                model.RemoveSpriteAt(index);
                 image.RemoveFromHierarchy();
             }
         }
 
         private void TileClicked(int tileIndex)
         {
-            selectedTile = tileIndex;
+            model.SelectedTile = tileIndex;
             RefreshSelectedTile();
         }
 
         private void RefreshSelectedTile()
         {
             int i = 0;
+            var selectedTile = model.SelectedTile;
             foreach (var tile in tilesContainer.Children())
             {
                 tile.EnableInClassList("selected-tile", i == selectedTile);
@@ -276,72 +232,25 @@ namespace QuickRuleTileEditor
 
         private void AddSprite(Sprite sprite)
         {
-            sprites.Add(sprite);
+            model.AddSprite(sprite);
             AddSpriteImageToContainer(sprite);
         }
 
         private void ClearSprites()
         {
-            sprites.Clear();
+            model.ClearSprites();
             spritesContainer.Clear();
         }
 
         private void GenerateRuleTileAsset()
         {
-            var path =  EditorUtility.SaveFilePanelInProject("Save Rule Tile", "Rule Tile", "asset", "Message");
-            if (string.IsNullOrEmpty(path)) return;
-
-            var tile = CreateInstance<RuleTile>();
-
-            for (int i = 0; i < PatternSize; i++)
-            {
-                var ruleOutput = tiles[i];
-
-                var rule = pattern.m_TilingRules[i].Clone();
-                rule.m_Sprites = (Sprite[])ruleOutput.m_Sprites.Clone();
-                rule.m_GameObject = ruleOutput.m_GameObject;
-                rule.m_ColliderType = ruleOutput.m_ColliderType;
-
-                tile.m_TilingRules.Add(rule);
-            }
-
-            AssetDatabase.CreateAsset(tile, path);
-
-            tileToEdit = tile;
+            model.GenerateRuleTileAsset();
             RefreshEditorMode();
         }
 
         private void SaveRuleTileAsset()
         {
-            var targetRulesList = tileToEdit.m_TilingRules;
-            for (int i = 0; i < PatternSize; i++)
-            {
-                var ruleOutput = tiles[i];
-                RuleTile.TilingRule rule;
-
-                if (targetRulesList.Count > i) 
-                {
-                    rule = targetRulesList[i];
-                }
-                else
-                {
-                    rule = pattern.m_TilingRules[i].Clone();
-                    targetRulesList.Add(rule);
-                }
-                rule.m_NeighborPositions.Clear();
-                rule.m_NeighborPositions.AddRange(pattern.m_TilingRules[i].m_NeighborPositions);
-                rule.m_Neighbors.Clear();
-                rule.m_Neighbors.AddRange(pattern.m_TilingRules[i].m_Neighbors);
-                rule.m_Sprites = (Sprite[])ruleOutput.m_Sprites.Clone();
-                rule.m_GameObject = ruleOutput.m_GameObject;
-                rule.m_ColliderType = ruleOutput.m_ColliderType;
-            }
-
-            for (int i = PatternSize; i < targetRulesList.Count; i++)
-            {
-                targetRulesList.RemoveAt(i);
-                i--;
-            }
+            model.SaveRuleTileAsset();
         }
     }
 }
