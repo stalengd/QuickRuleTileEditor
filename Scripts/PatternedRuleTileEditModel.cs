@@ -41,11 +41,12 @@ namespace QuickRuleTileEditor
         {
             this.tileToEdit = tileToEdit;
             tiles.AddRange(tileToEdit.m_TilingRules.Select(r => r.Clone()));
+
+            SetPattern(pattern);
+
             defaultTile.m_Sprites[0] = tileToEdit.m_DefaultSprite;
             defaultTile.m_GameObject = tileToEdit.m_DefaultGameObject;
             defaultTile.m_ColliderType = tileToEdit.m_DefaultColliderType;
-
-            SetPattern(pattern);
         }
 
 
