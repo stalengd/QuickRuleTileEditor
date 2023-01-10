@@ -1,0 +1,15 @@
+{
+    "name": "com.stalen.quickeruletileeditor",
+    "version": "0.1.0",
+    "displayName": "Quick Rule Tile Editor",
+    "description": "Easily and quickly create rule tiles in Unity.",
+    "unity": "2020.1",
+    "documentationUrl": "https://github.com/StalinGD/QuickRuleTileEditor",
+   "keywords": [
+      "tile",
+      "editor"
+    ],
+    "author": {
+      "name": "StalenGD"
+    }
+}
