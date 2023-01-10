@@ -19,7 +19,8 @@ namespace QuickRuleTileEditor
         private static Dictionary<string, string> DefaultPatterns { get; } = new()
         {
             { "Pattern-16", "16" },
-            { "Pattern-15", "15" }
+            { "Pattern-15", "15" },
+            { "Pattern-47", "47" },
         };
         private static string CustomPatternId { get; } = "Custom";
 
