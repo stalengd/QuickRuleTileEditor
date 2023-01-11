@@ -16,7 +16,7 @@ namespace QuickRuleTileEditor
 
     public class RuleTilePatternsProvider : IRuleTilePatternsProvider
     {
-        private static Dictionary<string, string> DefaultPatterns { get; } = new()
+        private static Dictionary<string, string> DefaultPatterns { get; } = new Dictionary<string, string>()
         {
             { "Pattern-16", "16" },
             { "Pattern-15", "15" },

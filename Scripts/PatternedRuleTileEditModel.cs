@@ -8,10 +8,10 @@ namespace QuickRuleTileEditor
     [System.Serializable]
     public class PatternedRuleTileEditModel
     {
-        [SerializeField] private List<Sprite> sprites = new();
+        [SerializeField] private List<Sprite> sprites = new List<Sprite>();
         [SerializeField] private int selectedTile = 0;
-        [SerializeField] private List<RuleTile.TilingRuleOutput> tiles = new();
-        [SerializeField] private RuleTile.TilingRuleOutput defaultTile = new();
+        [SerializeField] private List<RuleTile.TilingRuleOutput> tiles = new List<RuleTile.TilingRuleOutput>();
+        [SerializeField] private RuleTile.TilingRuleOutput defaultTile = new RuleTile.TilingRuleOutput();
         [SerializeField] private RuleTile pattern;
         [SerializeField] private string patternId;
         [SerializeField] private RuleTile tileToEdit;

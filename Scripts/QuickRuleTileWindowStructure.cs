@@ -108,37 +108,21 @@ namespace QuickRuleTileEditor
             selectedTileSpriteImage = new Image();
             imagesRow.Add(selectedTileSpriteImage);
 
-
-            static VisualElement inspectorField(VisualElement innerField, System.Action applyForOtherAction)
-            {
-                innerField.AddToClassList("inspector-field");
-
-                var applyForOtherButton = new Button(applyForOtherAction)
-                {
-                    text = "For All",
-                    tooltip = "Apply for all tiles"
-                };
-                applyForOtherButton.AddToClassList("inspector-field-button");
-
-                innerField.Add(applyForOtherButton);
-                return innerField;
-            }
-
             inspectorGameObjectField = new ObjectField("GameObject")
             {
                 objectType = typeof(GameObject),
                 allowSceneObjects = false
             };
             inspectorGameObjectField.RegisterValueChangedCallback(OnSelectedTileGameObjectChanged);
-            inspector.Add(inspectorField(inspectorGameObjectField, ApplySelectedTileGameObjectForAll));
+            inspector.Add(CreateInspectorField(inspectorGameObjectField, ApplySelectedTileGameObjectForAll));
 
             inspectorColliderField = new EnumField("Collider", Tile.ColliderType.None);
             inspectorColliderField.RegisterValueChangedCallback(OnSelectedTileColliderChanged);
-            inspector.Add(inspectorField(inspectorColliderField, ApplySelectedTileColliderForAll));
+            inspector.Add(CreateInspectorField(inspectorColliderField, ApplySelectedTileColliderForAll));
 
             inspectorOutputField = new EnumField("Output", RuleTile.TilingRuleOutput.OutputSprite.Single);
             inspectorOutputField.RegisterValueChangedCallback(OnSelectedTileOutputChanged);
-            inspector.Add(inspectorField(inspectorOutputField, ApplySelectedTileOutputForAll));
+            inspector.Add(CreateInspectorField(inspectorOutputField, ApplySelectedTileOutputForAll));
             inspectorOutputField.SetHidden(true); // Complex output is not supported for now
 
             return inspector;
@@ -343,6 +327,21 @@ namespace QuickRuleTileEditor
             selectedSpriteImage.AddToClassList("tile-sprite");
             image.Add(selectedSpriteImage);
             return image;
+        }
+
+        private static VisualElement CreateInspectorField(VisualElement innerField, System.Action applyForOtherAction)
+        {
+            innerField.AddToClassList("inspector-field");
+
+            var applyForOtherButton = new Button(applyForOtherAction)
+            {
+                text = "For All",
+                tooltip = "Apply for all tiles"
+            };
+            applyForOtherButton.AddToClassList("inspector-field-button");
+
+            innerField.Add(applyForOtherButton);
+            return innerField;
         }
     }
 }
