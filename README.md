@@ -1,5 +1,7 @@
 # Quick Rule Tile
 
+[![openupm](https://img.shields.io/npm/v/com.stalengd.quickruletileeditor?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.stalengd.quickruletileeditor/)
+
 An Unity editor window for creating and then editing rule tiles (aka auto tiles).
 
 ![Quick Rule Tile min](https://user-images.githubusercontent.com/33173619/211613196-5b1c6b38-571d-4d53-8c92-91bd321e3452.gif)
@@ -37,3 +39,43 @@ Tested on Unity 2021.3.9f1
 5. As soon as all tiles are assigned, press the "Save as..." button to save asset.
 
 Later you will be able to edit this rule tile by clicking "Open" button on the top toolbar.
+
+
+## Installation
+
+### Add from [OpenUPM](https://openupm.com/packages/com.stalengd.quickruletileeditor) *<sub>(Recommended)</sub>*
+
+**CLI**
+
+```
+openupm add com.stalengd.quickruletileeditor
+```
+
+<details>
+<summary><b>Manual installation</b></summary>
+
+- open `Edit/Project Settings/Package Manager`
+- add a new Scoped Registry (or edit the existing OpenUPM entry):
+  ```
+  Name: package.openupm.com
+  URL:  https://package.openupm.com/
+  Scope(s): com.stalengd.quickruletileeditor
+  ```
+- click <kbd>Save</kbd> (or <kbd>Apply</kbd>)
+- open `Window/Package Manager`
+- click <kbd>+</kbd>
+- select <kbd>AAdd package by name...</kbd> or <kbd>Add from Git URL...</kbd>
+- paste `com.stalengd.quickruletileeditor` into name
+- paste `0.1.0` into version
+- click <kbd>Add</kbd>
+</details>
+
+
+
+### Add from Git URL
+
+- open `Window/Package Manager`
+- click <kbd>+</kbd>
+- select <kbd>Add from Git URL...</kbd>
+- paste `https://github.com/stalengd/QuickRuleTileEditor.git`
+- click <kbd>Add</kbd>
