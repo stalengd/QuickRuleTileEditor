@@ -1,9 +1,9 @@
 {
     "name": "com.stalengd.quickruletileeditor",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "displayName": "Quick Rule Tile Editor",
     "description": "Easily and quickly create rule tiles in Unity.",
-    "unity": "2020.1",
+    "unity": "2021.1",
     "documentationUrl": "https://github.com/stalengd/QuickRuleTileEditor",
    "keywords": [
       "tile",

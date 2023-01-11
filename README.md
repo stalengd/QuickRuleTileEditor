@@ -23,9 +23,9 @@ Planned features:
 
 ## Requirements
 
-Package depends on Unity UI Toolkit (for editor) and 2D Tilemap Extras package (in which the rule tile itself). 
+Package requires Unity 2021.1+ and [2D Tilemap Extras package](https://docs.unity3d.com/Manual/com.unity.2d.tilemap.extras.html) (in which the rule tile itself). 
 
-If you start 2D project on Unity 2021+, these packages should be included automatically.
+Unity 2021 is required because tool is developed based on UI Toolkit, older versions do not have some built-in components. However, you can try to work around this in Unity 2020.3 by manually installing the `com.unity.ui` preview package (not tested).
 
 Tested on Unity 2021.3.9f1
 
@@ -66,7 +66,7 @@ openupm add com.stalengd.quickruletileeditor
 - click <kbd>+</kbd>
 - select <kbd>AAdd package by name...</kbd> or <kbd>Add from Git URL...</kbd>
 - paste `com.stalengd.quickruletileeditor` into name
-- paste `0.1.0` into version
+- paste `0.2.0` into version
 - click <kbd>Add</kbd>
 </details>
 
