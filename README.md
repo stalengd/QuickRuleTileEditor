@@ -64,9 +64,9 @@ openupm add com.stalengd.quickruletileeditor
 - click <kbd>Save</kbd> (or <kbd>Apply</kbd>)
 - open `Window/Package Manager`
 - click <kbd>+</kbd>
-- select <kbd>AAdd package by name...</kbd> or <kbd>Add from Git URL...</kbd>
+- select <kbd>Add package by name...</kbd> or <kbd>Add from Git URL...</kbd>
 - paste `com.stalengd.quickruletileeditor` into name
-- paste `0.2.0` into version
+- paste `0.3.0` into version
 - click <kbd>Add</kbd>
 </details>
 
