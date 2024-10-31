@@ -12,7 +12,16 @@ namespace QuickRuleTileEditor
         public static IEnumerable<Sprite> GetSpritesFromTexture(Object texture)
         {
             var path = AssetDatabase.GetAssetPath(texture);
-            var subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+            Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+
+            //Sort ths Sprite by their name's trail number.
+            subAssets = subAssets.OrderBy(x => {
+                string indexStr = x.name.Substring(x.name.LastIndexOf('_') + 1);
+                int index = 0;
+                int.TryParse(indexStr, out index);
+                return index;
+            }).ToArray();
+            
             return subAssets.OfType<Sprite>();
         }
     }
