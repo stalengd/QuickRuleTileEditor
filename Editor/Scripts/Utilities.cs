@@ -14,13 +14,7 @@ namespace QuickRuleTileEditor
             Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
 
             //Sort the Sprite by their name's trailing number.
-            subAssets = subAssets.OrderBy(x =>
-            {
-                string trailingNumber = string.Concat(x.name.ToArray().Reverse().TakeWhile(char.IsNumber).Reverse());
-                int index = 0;
-                int.TryParse(trailingNumber, out index);
-                return index;
-            }).ToArray();
+            System.Array.Sort(subAssets, (x, y) => EditorUtility.NaturalCompare(x.name, y.name));
 
             return subAssets.OfType<Sprite>();
         }
