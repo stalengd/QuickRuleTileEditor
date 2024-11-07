@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor;
-using UnityEditor.UIElements;
 
 namespace QuickRuleTileEditor
 {
@@ -12,7 +11,11 @@ namespace QuickRuleTileEditor
         public static IEnumerable<Sprite> GetSpritesFromTexture(Object texture)
         {
             var path = AssetDatabase.GetAssetPath(texture);
-            var subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+            Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+
+            //Sort the Sprite by their name's trailing number.
+            System.Array.Sort(subAssets, (x, y) => EditorUtility.NaturalCompare(x.name, y.name));
+
             return subAssets.OfType<Sprite>();
         }
     }
