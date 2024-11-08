@@ -1,6 +1,6 @@
 {
     "name": "com.stalengd.quickruletileeditor",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "displayName": "Quick Rule Tile Editor",
     "description": "Easily and quickly create rule tiles in Unity.",
     "unity": "2021.1",
